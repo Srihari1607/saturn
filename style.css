@@ -1,0 +1,31 @@
+* { box-sizing: border-box }
+:root { color-scheme: light; font: 16px/1.5 "Segoe UI", sans-serif; color: #203734; background: #f7f8f4 }
+body { margin: 0 }
+header { background: #123e39; color: white; display: flex; align-items: center; gap: 1.5rem; padding: 1rem max(5vw, calc((100vw - 54rem) / 2)) }
+header b { letter-spacing: .15em }
+header span { font-size: .84rem; color: #d3e6db }
+main { max-width: 56rem; padding: 2rem 1rem 4rem; margin: auto }
+h1 { font: 500 clamp(2.3rem,5vw,3.5rem)/1.1 Georgia,serif; margin-bottom: .4rem }
+.intro, small { color: #4d635e }
+form, article { background: white; border: 1px solid #cbd7cc; padding: 1.4rem; border-radius: .6rem; margin: 1rem 0 }
+label, small { display: block; margin-bottom: .4rem }
+label { font-weight: 600 }
+textarea, select { font: inherit; padding: .65rem; border: 1px solid #82968c; border-radius: .3rem; width: 100% }
+textarea { resize: vertical }
+.inputs, .results { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0 }
+small { margin-top: .4rem }
+button { background: #165344; color: white; font: inherit; font-weight: 600; border: 0; border-radius: .3rem; padding: .65rem 1.1rem; cursor: pointer }
+a { color: #165344 }
+.bar { display: grid; grid-template-columns: 5rem 1fr 6rem; gap: .75rem; align-items: center }
+progress { width: 100%; accent-color: #337b69 }
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; background: white }
+td, th { padding: .65rem; text-align: left; border-bottom: 1px solid #cbd7cc; overflow-wrap: anywhere }
+[role=alert] { color: #8f2619 }
+input { max-width: 100% }
+input[type=url] { width:100%; padding:.65rem; font:inherit; border:1px solid #82968c; border-radius:.3rem }
+button { margin-top:1rem }
+button:disabled { opacity:.65; cursor:wait }
+.overall-score strong { display:block; font-size:2.5rem; color:#165344 }
+.results h2 { overflow-wrap:anywhere }
+details { padding:1rem 0 }

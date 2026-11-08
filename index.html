@@ -1,37 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ppsal</title>
-
-    <link rel="stylesheet" href="./stylesheet.css" />
-    <style>
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      img {
-        width: 300px;
-        display: block;
-        margin: 0 auto;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div>
-        <img src="C:\Users\navee\Desktop\pp\11.jpg" alt="Sample Image" />
-      </div>
-
-      <h1>Analyse your comments</h1>
-      <p>Welcome to Saturn Application</p>
-
-      <div class="btn">
-        <a href="saturn.py">Analyse</a>
-      </div>
-    </div>
-  </body>
-</html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SATURN · Sentiment analysis</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><b>SATURN</b><span>Sentiment analysis</span></header>
+<main>
+  <h1>Analyze reviews</h1>
+  <p class="intro">Analyze comments from a link, a CSV file, or pasted text.</p>
+  <form method="post" enctype="multipart/form-data">
+    <label for="url">Video, post or product URL</label>
+    <input id="url" name="url" type="url" placeholder="https://www.youtube.com/watch?v=…" value="{{request.form.get('url', '')}}">
+    <small>YouTube and Instagram comments · Amazon historical review lookup</small>
+    <label for="text">Comment or review</label>
+    <textarea id="text" name="text" rows="4" placeholder="Enter review text…">{{ request.form.get('text', '') }}</textarea>
+    <div class="inputs"><div><label for="file">Or upload a CSV</label>
+    <input type="file" id="file" name="file" accept=".csv,text/csv">
+    <small>Use a text, Comment, or Review column.</small></div>
+    <div><label for="model">Model</label><select name="model" id="model">
+      {% for value, title in [('vader','VADER'),('roberta','RoBERTa'),('both','Compare both models')] %}
+      <option value="{{value}}" {% if selected == value %}selected{% endif %}>{{title}}</option>{% endfor %}
+    </select></div></div>
+    <label for="preprocessing">Text preparation</label>
+    <select id="preprocessing" name="preprocessing">
+    {% for value, title in [('raw-v1','Original text'),('social-v1','Normalize links, mentions, hashtags and emojis'),('paper-v1','Also lowercase and remove common stop words')] %}
+    <option value="{{value}}" {% if request.form.get('preprocessing', 'raw-v1') == value %}selected{% endif %}>{{title}}</option>
+    {% endfor %}</select>
+    <button type="submit">Analyze sentiment</button>
+    <p id="progress" role="status" hidden>Fetching comments and scoring your input. Collection can take up to 90 seconds; model loading and scoring may take longer.</p>
+    {% if error %}<p role="alert">{{error}}</p>{% endif %}
+  </form>
+  {% if summaries is defined %}
+  <section id="analysis-results" aria-label="Analysis results"><div class="results"><h2>{{collection.title if collection and collection.title else 'Results'}}</h2>
+  <a download="saturn-predictions.csv" href="data:text/csv;base64,{{payload}}">Download predictions ↓</a></div>
+  {% for model, summary in summaries.items() %}<article><h3>{{model|upper}}</h3>
+    <h4>Overall comment summary</h4>
+    <p>{{summary.overview}}</p>
+    <p class="overall-score">Overall sentiment score
+      <strong>{{'%+.1f'|format(summary.net_sentiment) if summary.scored else 'unavailable'}}</strong></p>
+    <small>Net sentiment on a −100 to +100 scale · {{summary.scored}} scored · {{summary.skipped}} skipped</small>
+    {% for label, n in summary.counts.items() %}<div class="bar"><span>{{label}}</span>
+    <progress max="{{summary.scored or 1}}" value="{{n}}" aria-label="{{label}} share"></progress>
+    <span>{{n}}{% if summary.scored %} ({{'%.0f'|format(100*n/summary.scored)}}%){% endif %}</span></div>{% endfor %}
+  </article>{% endfor %}
+  {% if collection %}<details><summary>Collection details</summary>
+    <p>{{collection.details}}</p>
+    <p>{{collection.records|length}} records retrieved · {{collection.retrieved_at}}</p>
+    {% if collection.limited %}<p>Collection limit reached. Results cover the retrieved subset.</p>{% endif %}
+    {% for warning in collection.warnings %}<p role="status">{{warning}}</p>{% endfor %}
+  </details>{% endif %}
+  {% if trends %}<h3>Daily sentiment · UTC</h3>
+  {% if trend_count > 30 %}<small>Showing the latest 30 daily model totals. Download predictions for all timestamps.</small>{% endif %}
+  <div class="scroll"><table><thead><tr><th>Date</th><th>Model</th><th>Scored</th><th>Net sentiment</th></tr></thead>
+  <tbody>{% for point in trends %}<tr><td>{{point.date}}</td><td>{{point.model}}</td><td>{{point.scored}}</td>
+  <td>{{'%+.1f'|format(point.net_sentiment)}}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  {% if missing_dates %}<small>{{missing_dates}} scored predictions lack a valid timestamp and are excluded from the daily trend.</small>{% endif %}
+  <h3>Predictions</h3>{% if total > 20 %}<p>Showing 20 of {{total}}. Download the CSV for all predictions.</p>{% endif %}
+  <div class="scroll"><table><thead><tr><th>ID</th><th>Text</th><th>Model</th><th>Prediction</th><th>Score</th></tr></thead>
+  <tbody>{% for row in rows %}<tr><td>{{row.record_id}}</td><td>{{row.text|truncate(240)}}</td><td>{{row.model}}</td>
+  <td>{{row.label or row.reason}}</td><td>{% if row.status == 'scored' %}{% if row.model == 'vader' %}{{row.compound}} polarity{% else %}{{'%.3f'|format(row['p_' ~ row.label|lower])}} probability{% endif %}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+  </section>{% endif %}
+</main><script>
+document.querySelector("form").addEventListener("submit", () => {
+  document.getElementById("progress").hidden = false;
+  document.querySelector("button").disabled = true;
+});
+window.addEventListener("pageshow", () => {
+  document.querySelector("button").disabled = false;
+  document.getElementById("progress").hidden = true;
+  document.getElementById("analysis-results")?.scrollIntoView();
+});
+</script></body></html>
